@@ -1,79 +1,752 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>我的第一个网站</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: #f5f7fa;
-      color: #22303f;
-      line-height: 1.75;
-      padding: 24px 18px 60px;
-    }
-    .wrap { max-width: 620px; margin: 0 auto; }
-    header {
-      background: linear-gradient(135deg, #4f7cff, #7c4dff);
-      color: #fff;
-      border-radius: 18px;
-      padding: 32px 24px;
-      margin-bottom: 22px;
-    }
-    header h1 { font-size: 26px; margin-bottom: 6px; }
-    header p { opacity: .9; font-size: 15px; }
-    section {
-      background: #fff;
-      border-radius: 16px;
-      padding: 22px 20px;
-      margin-bottom: 18px;
-      box-shadow: 0 2px 10px rgba(30, 50, 90, .06);
-    }
-    h2 { font-size: 18px; margin-bottom: 12px; color: #2b3a4f; }
-    ul { padding-left: 20px; }
-    li { margin-bottom: 8px; }
-    a { color: #4f7cff; }
-    .btn {
-      display: inline-block;
-      margin-top: 10px;
-      background: #4f7cff;
-      color: #fff;
-      text-decoration: none;
-      padding: 11px 22px;
-      border-radius: 10px;
-      font-size: 15px;
-    }
-    footer { text-align: center; font-size: 13px; color: #8b98a8; margin-top: 26px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#05080c">
+<title>DNA 复制与染色体分配</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#05080c;--panel:#0a0f15;--line:#1c2634;--ink:#e3ecf7;--muted:#7b8da3;--accent:#5b8cff;--mark:#ffb454;
+  }
+  html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg)}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);-webkit-user-select:none;user-select:none}
+  #app{height:100%;display:flex;flex-direction:column;background:var(--bg)}
+
+  .bar{flex:none;display:flex;align-items:center;gap:7px;padding:7px 11px;border-bottom:1px solid var(--line);background:var(--panel)}
+  .bar h1{font-size:13px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar h1 small{font-weight:400;color:var(--muted);font-size:10.5px;margin-left:7px}
+  .tb{flex:none;height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#0e141c;color:var(--ink);font-size:12px;font-family:inherit;cursor:pointer}
+  .tb:active{transform:scale(.96)}
+  .tb.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .stage{flex:1;display:flex;min-height:0}
+  .panel{flex:none;width:112px;padding:9px;border-right:1px solid var(--line);background:var(--panel);overflow-y:auto;font-size:10.5px}
+  .stat{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #18212d}
+  .stat span{color:var(--muted)}
+  .stat b{font-size:12px}
+  .ptitle{font-size:9.5px;color:#4f5d70;letter-spacing:.6px;margin:10px 0 3px}
+  .row{display:flex;align-items:center;gap:6px;padding:3px 0;color:var(--muted)}
+  .row b{margin-left:auto;color:var(--ink);font-size:11.5px}
+  .lgw{display:inline-flex;gap:2px;flex:none;align-items:center}
+  .ln{width:3px;height:16px;background:#e6eef8;border-radius:2px;position:relative;display:block}
+  .ln.m::after{content:"";position:absolute;left:50%;top:44%;width:9px;height:2px;background:var(--mark);border-radius:1px;transform:translateX(-50%)}
+
+  .wrap{flex:1;overflow:auto;position:relative}
+  .scaler{position:relative}
+  .canvas{position:absolute;left:0;top:0;transform-origin:0 0}
+  #links{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+
+  .cell{
+    position:absolute;border-radius:50%;
+    background:radial-gradient(circle at 36% 28%,#111a25,#080d13 72%);
+    border:1.5px solid #2d3d51;
+    box-shadow:0 0 22px rgba(70,130,220,.14),inset 0 0 18px rgba(0,0,0,.5);
+    cursor:pointer;transition:left .45s cubic-bezier(.2,.85,.25,1),top .45s cubic-bezier(.2,.85,.25,1),border-color .2s,opacity .3s
+  }
+  .cell.divided{opacity:.4;border-style:dashed;cursor:default}
+  .cell.gamete{border-color:#2f7a5c;box-shadow:0 0 22px rgba(61,220,151,.16),inset 0 0 18px rgba(0,0,0,.5)}
+  .cell.sel{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,140,255,.22)}
+  .cell.enter{animation:enter .4s cubic-bezier(.2,.9,.3,1.15)}
+  @keyframes enter{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+  .chrs{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px 10px;width:100%;height:100%;padding:13px 10px;border-radius:50%;overflow:hidden}
+  .tag{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);font-size:9px;color:#5f7189;white-space:nowrap}
+  .cell.gamete .tag{color:#3ddc97}
+
+  .poss{
+    position:absolute;right:-14px;top:50%;transform:translateY(-50%);
+    width:24px;height:24px;border-radius:50%;border:1px solid #31445c;background:#0d1620;
+    color:#8fb4e8;font-size:11px;font-family:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3
+  }
+  .poss:active{transform:translateY(-50%) scale(.9)}
+
+  /* 染色体：竖线 = 一条链，横杠 = ¹⁵N 标记 */
+  .chr{display:flex;gap:6px}
+  .ctd{display:flex;gap:1px}
+  .st{position:relative;border-radius:2px;background:#e6eef8}
+  .st .mk{position:absolute;left:50%;top:46%;width:calc(100% + 7px);height:2px;background:var(--mark);border-radius:1px;transform:translateX(-50%)}
+
+  .menu{position:fixed;z-index:60;display:none;gap:6px;background:#0d131b;border:1px solid var(--line);border-radius:13px;padding:6px;box-shadow:0 14px 36px rgba(0,0,0,.65)}
+  .menu.show{display:flex;animation:pop .14s ease}
+  @keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+  .opt{padding:9px 14px;border-radius:9px;border:1px solid transparent;background:#141c27;color:var(--ink);font-family:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+  .opt:disabled{opacity:.28;cursor:not-allowed}
+
+  .cover{position:fixed;inset:0;z-index:80;background:rgba(3,6,10,.94);display:flex;align-items:center;justify-content:center;padding:16px}
+  .cover.hide{display:none}
+  .card{width:min(420px,100%);background:#0b1017;border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 24px 60px rgba(0,0,0,.7);max-height:100%;overflow-y:auto}
+  .card h2{font-size:15.5px;margin-bottom:3px}
+  .card .sub{font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.6}
+  .field{margin-bottom:14px}
+  .field > label{display:block;font-size:11px;color:#8b9cb2;margin-bottom:6px}
+  .ninput{width:100%;padding:11px 13px;border-radius:11px;border:1px solid var(--line);background:#0f151d;color:var(--ink);font-size:16px;font-family:inherit;outline:none}
+  .ninput:focus{border-color:var(--accent)}
+  .nhint{font-size:10px;color:#5f7189;margin-top:5px}
+  .nhint.err{color:#ff7a8e}
+  .modes{display:flex;flex-direction:column;gap:8px}
+  .mode{padding:11px 13px;border-radius:11px;border:1px solid var(--line);background:#0f151d;cursor:pointer;display:flex;gap:9px;align-items:flex-start}
+  .mode.on{border-color:var(--accent);background:#101a2c}
+  .mode .rd{width:15px;height:15px;border-radius:50%;border:2px solid #33455e;flex:none;margin-top:2px}
+  .mode.on .rd{border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--accent)}
+  .mode .tx b{display:block;font-size:12.5px;margin-bottom:2px}
+  .mode .tx span{font-size:10.5px;color:var(--muted);line-height:1.5}
+  .go{width:100%;padding:13px;border-radius:12px;border:0;background:var(--accent);color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px}
+  .go:active{transform:scale(.98)}
+
+  .hintbar{flex:none;display:flex;align-items:center;gap:8px;padding:4px 11px;border-top:1px solid var(--line);background:var(--panel);font-size:10px;color:#5f7189;white-space:nowrap;overflow:hidden}
+  .hintbar b{color:#9fb0c6;font-weight:500}
+  .hintbar .q{margin-left:auto;color:var(--accent);cursor:pointer}
+
+  /* 所有可能 */
+  .po{position:fixed;inset:0;z-index:95;background:rgba(3,6,10,.93);display:none;align-items:center;justify-content:center;padding:12px}
+  .po.show{display:flex}
+  .po .box{width:min(520px,100%);max-height:100%;background:#0b1017;border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;overflow:hidden}
+  .po .hd{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line)}
+  .po .hd b{flex:1;font-size:13px}
+  .po .hd button{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+  .po .bd{padding:12px 14px;overflow-y:auto}
+  .grp{font-size:10.5px;color:#8b9cb2;margin:10px 0 7px;padding-top:9px;border-top:1px solid #141d28}
+  .grp:first-child{border-top:0;margin-top:0;padding-top:0}
+  .pcards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .pcard{background:#0f151d;border:1px solid #16202c;border-radius:11px;padding:8px 6px}
+  .pcells{display:flex;gap:6px;justify-content:center}
+  .mcell{width:78px;height:78px;border-radius:50%;border:1px solid #24344a;background:radial-gradient(circle at 36% 28%,#111a25,#080d13 72%);display:flex;align-items:center;justify-content:center}
+  .mchrs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center;width:100%;height:100%;padding:9px 5px;border-radius:50%;overflow:hidden}
+  .pway{text-align:center;font-size:9.5px;color:#5f7189;margin-top:6px}
+  .po .none{font-size:11.5px;color:var(--muted);padding:8px 0}
+
+  /* 小号染色体（可能结果卡片里用） */
+  .chr.sm{gap:3px}
+  .st.sm{width:2px}
+  .st.sm .mk{width:calc(100% + 4px);height:1.5px}
+
+  .rotate{position:fixed;inset:0;z-index:200;background:#05080c;color:#dfe8f5;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px}
+  .rotate .ico{font-size:42px;animation:rot 1.8s ease-in-out infinite}
+  @keyframes rot{0%,40%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
+  .rotate p{font-size:13px;color:#8b9cb2;line-height:1.8}
+  .rotate button{margin-top:6px;padding:9px 18px;border-radius:10px;border:1px solid var(--line);background:transparent;color:#8b9cb2;font-family:inherit;font-size:12px;cursor:pointer}
+  @media (orientation:portrait){ .rotate{display:flex} body.allow-portrait .rotate{display:none} }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>你好，这里是我的网站 👋</h1>
-      <p>它托管在 GitHub Pages 上，任何人打开网址都能看到。</p>
-    </header>
-
-    <section>
-      <h2>这个网站能做什么</h2>
-      <ul>
-        <li>免费、公开、有独立网址</li>
-        <li>改完文件提交一次，几十秒后自动更新</li>
-        <li>可以放作品、笔记、简历、下载链接</li>
-      </ul>
-      <a class="btn" href="https://github.com" target="_blank" rel="noopener">去 GitHub 看看</a>
-    </section>
-
-    <section>
-      <h2>怎么改内容</h2>
-      <ul>
-        <li>把 <strong>你好，这里是我的网站</strong> 换成你的标题</li>
-        <li>把上面三行列表换成你想写的内容</li>
-        <li>保存并提交（Commit），等一分钟刷新页面</li>
-      </ul>
-    </section>
-
-    <footer>© 2026 我的小站 · 用 GitHub Pages 搭建</footer>
+<div id="app">
+  <div class="bar">
+    <h1>DNA 复制与染色体分配<small id="barSub">2n = 4</small></h1>
+    <button class="tb" id="btnFit">适应</button>
+    <button class="tb" id="btnOut">−</button>
+    <button class="tb" id="btnIn">+</button>
+    <button class="tb" id="btnReset">重置</button>
+    <button class="tb pri" id="btnSetup">设置</button>
   </div>
+  <div class="stage">
+    <aside class="panel">
+      <div class="stat"><span>细胞</span><b id="stCells">1</b></div>
+      <div class="stat"><span>染色体</span><b id="stChr">4</b></div>
+      <div class="stat"><span>DNA 分子</span><b id="stDna">4</b></div>
+      <div class="ptitle">DNA 组成</div>
+      <div class="row"><span class="lgw"><i class="ln m"></i><i class="ln"></i></span>杂交<b id="stHL">0</b></div>
+      <div class="row"><span class="lgw"><i class="ln m"></i><i class="ln m"></i></span>全 ¹⁵N<b id="stHH">0</b></div>
+      <div class="row"><span class="lgw"><i class="ln"></i><i class="ln"></i></span>全 ¹⁴N<b id="stLL">0</b></div>
+    </aside>
+    <div class="wrap" id="wrap">
+      <div class="scaler" id="scaler">
+        <div class="canvas" id="canvas"><svg id="links"></svg></div>
+      </div>
+    </div>
+  </div>
+  <div class="hintbar">
+    <b>点细胞</b>选分裂 · <b>?</b> 看子细胞的所有可能
+    <span class="q" id="btnHelp">说明</span>
+  </div>
+</div>
+
+<div class="menu" id="menu"></div>
+
+<div class="po" id="po">
+  <div class="box">
+    <div class="hd"><b id="poTitle">子细胞的所有可能</b><button id="poClose">✕</button></div>
+    <div class="bd" id="poBody"></div>
+  </div>
+</div>
+
+<div class="cover" id="cover">
+  <div class="card">
+    <h2>实验设置</h2>
+    <div class="sub">设定染色体数，再选择标记方式。</div>
+    <div class="field">
+      <label>染色体条数（偶数）</label>
+      <input class="ninput" id="nInput" type="number" inputmode="numeric" step="2" min="2" max="40" value="4">
+      <div class="nhint" id="nHint">必须是偶数，范围 2 ～ 40</div>
+    </div>
+    <div class="field">
+      <label>模式</label>
+      <div class="modes" id="modes">
+        <div class="mode on" data-mode="1">
+          <i class="rd"></i>
+          <div class="tx"><b>¹⁵N 标记 · 正常培养基</b><span>DNA 两条链都带 ¹⁵N；之后复制出的新链是 ¹⁴N</span></div>
+        </div>
+        <div class="mode" data-mode="2">
+          <i class="rd"></i>
+          <div class="tx"><b>无标记 · ¹⁵N 培养基</b><span>DNA 本来是 ¹⁴N；之后复制出的新链是 ¹⁵N</span></div>
+        </div>
+      </div>
+    </div>
+    <button class="go" id="btnStart">开始实验</button>
+  </div>
+</div>
+
+<div class="rotate">
+  <div class="ico">📱</div>
+  <p>请把手机横过来使用<br><span style="font-size:11.5px;opacity:.6">横屏才能完整显示分裂过程</span></p>
+  <button id="btnAllow">就这样继续</button>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  var PAD = 30;
+
+  var S = { n: 4, mode: 1, zoom: 1, cells: [], seq: 0, running: false, cs: 110, colw: 200, rowh: 150 };
+  var INIT = "H", MEDIUM = "L";
+
+  var canvas = $("#canvas"), scaler = $("#scaler"), wrap = $("#wrap"),
+      menuEl = $("#menu"), svg = $("#links");
+
+  /* ---------- 基础 ---------- */
+  function applyMode() {
+    INIT = S.mode === 1 ? "H" : "L";
+    MEDIUM = S.mode === 1 ? "L" : "H";
+  }
+  function applyMetrics() {
+    var n = S.n;
+    S.cs = n <= 2 ? 92 : n <= 4 ? 112 : n <= 6 ? 130 : n <= 8 ? 146 : 162;
+    S.colw = S.cs + 92;
+    S.rowh = S.cs + 42;
+  }
+  function mkChr(pair) { return { pair: pair, chromatids: [{ strands: [INIT, INIT] }] }; }
+  function initialChromosomes() {
+    var pairs = Math.max(1, Math.floor(S.n / 2)), out = [];
+    for (var p = 1; p <= pairs; p++) { out.push(mkChr(p)); out.push(mkChr(p)); }
+    return out;
+  }
+  function newCell(x, y, chrs, stage, parentId) {
+    return { id: "c" + (++S.seq), x: x, y: y, gen: 0, stage: stage,
+             chromosomes: chrs, parentId: parentId || null, children: [], fresh: false };
+  }
+  function copyChromatid(t) { return { strands: t.strands.slice() }; }
+  function copyChromosome(ch) {
+    return { pair: ch.pair, chromatids: ch.chromatids.map(copyChromatid) };
+  }
+  function replicateChrs(chrs) {
+    return chrs.map(function (ch) {
+      if (ch.chromatids.length === 2) return copyChromosome(ch);
+      var a = ch.chromatids[0].strands[0], b = ch.chromatids[0].strands[1];
+      return { pair: ch.pair, chromatids: [{ strands: [a, MEDIUM] }, { strands: [b, MEDIUM] }] };
+    });
+  }
+  function compName(t) {
+    var h = t.strands.filter(function (s) { return s === "H"; }).length;
+    return h === 2 ? "HH" : (h === 1 ? "HL" : "LL");
+  }
+
+  /* ---------- 分裂方案 ---------- */
+  function planDivision(cell, type) {
+    var chrs = type === "M2" ? cell.chromosomes.map(copyChromosome) : replicateChrs(cell.chromosomes);
+    if (type === "M1") {
+      var pairs = {};
+      chrs.forEach(function (ch) { (pairs[ch.pair] = pairs[ch.pair] || []).push(ch); });
+      var assign = {};
+      Object.keys(pairs).forEach(function (p) { assign[p] = Math.random() < 0.5 ? 0 : 1; });
+      return { type: type, chrs: chrs, kind: "pair", assign: assign };
+    }
+    var assign2 = chrs.map(function () { return Math.random() < 0.5 ? 0 : 1; });
+    return { type: type, chrs: chrs, kind: "chromatid", assign: assign2 };
+  }
+  function daughtersFromPlan(plan) {
+    if (plan.kind === "pair") {
+      var A = [], B = [], byPair = {};
+      plan.chrs.forEach(function (ch) { (byPair[ch.pair] = byPair[ch.pair] || []).push(ch); });
+      Object.keys(byPair).forEach(function (p) {
+        var list = byPair[p], f = plan.assign[p];
+        A.push(copyChromosome(list[f]));
+        B.push(copyChromosome(list[1 - f]));});
+      return [A, B];
+    }
+    var X = [], Y = [];
+    plan.chrs.forEach(function (ch, i) {
+      var f = plan.assign[i];
+      X.push({ pair: ch.pair, chromatids: [copyChromatid(ch.chromatids[f])] });
+      Y.push({ pair: ch.pair, chromatids: [copyChromatid(ch.chromatids[1 - f])] });
+    });
+    return [X, Y];
+  }
+  function stageAfter(type) {
+    if (type === "M1") return "m1";
+    if (type === "M2") return "gamete";
+    return "somatic";
+  }
+
+  /* ---------- 布局 ---------- */
+  function layoutTree() {
+    var map = {};
+    S.cells.forEach(function (c) { map[c.id] = c; });
+    var slot = 0;
+    function place(c, depth) {
+      c.gen = depth;
+      var kids = c.children.map(function (id) { return map[id]; }).filter(Boolean);
+      if (!kids.length) { c.y = PAD + slot * S.rowh; slot++; }
+      else {
+        kids.forEach(function (k) { place(k, depth + 1); });
+        c.y = (kids[0].y + kids[kids.length - 1].y) / 2;
+      }
+      c.x = PAD + depth * S.colw;
+    }
+    S.cells.filter(function (c) { return !c.parentId; }).forEach(function (r) { place(r, 0); });
+  }
+  function sizeCanvas() {
+    var w = 0, h = 0;
+    S.cells.forEach(function (c) {
+      w = Math.max(w, c.x + S.cs + 50);
+      h = Math.max(h, c.y + S.cs + 54);
+    });
+    w = Math.max(w, wrap.clientWidth / Math.max(S.zoom, .05) - PAD);
+    h = Math.max(h, wrap.clientHeight / Math.max(S.zoom, .05) - PAD);
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    canvas.style.transform = "scale(" + S.zoom + ")";
+    svg.setAttribute("width", w);
+    svg.setAttribute("height", h);
+    scaler.style.width = Math.round(w * S.zoom) + "px";
+    scaler.style.height = Math.round(h * S.zoom) + "px";
+    drawLinks();
+  }
+  function drawLinks() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var map = {};
+    S.cells.forEach(function (c) { map[c.id] = c; });
+    S.cells.forEach(function (c) {
+      if (!c.parentId) return;
+      var p = map[c.parentId];
+      if (!p) return;
+      var l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      l.setAttribute("x1", p.x + S.cs / 2); l.setAttribute("y1", p.y + S.cs / 2);
+      l.setAttribute("x2", c.x + S.cs / 2); l.setAttribute("y2", c.y + S.cs / 2);
+      l.setAttribute("stroke", "rgba(150,180,220,.26)");
+      l.setAttribute("stroke-width", "1.3");
+      svg.appendChild(l);
+    });
+  }
+  function applyPositions() {
+    S.cells.forEach(function (c) {
+      var el = document.getElementById("cell-" + c.id);
+      if (el) { el.style.left = c.x + "px"; el.style.top = c.y + "px"; }
+    });
+    sizeCanvas();
+  }
+
+  /* ---------- 渲染 ---------- */
+  function buildChromosome(ch) {
+    var el = document.createElement("div");
+    el.className = "chr";
+    var unit = (S.cs / 112) * (S.n > 8 ? Math.max(0.42, 9 / S.n) : 1);
+    el.style.height = Math.max(13, (33 - (ch.pair - 1) * 4) * unit) + "px";
+    ch.chromatids.forEach(function (t) {
+      var ctd = document.createElement("div");
+      ctd.className = "ctd";
+      t.strands.forEach(function (st) {
+        var s = document.createElement("i");
+        s.className = "st";
+        s.style.width = Math.max(2, Math.round(2.6 * unit)) + "px";
+        if (st === "H") {
+          var mk = document.createElement("div");
+          mk.className = "mk";
+          s.appendChild(mk);
+        }
+        ctd.appendChild(s);
+      });
+      el.appendChild(ctd);
+    });
+    return el;
+  }
+  function buildCell(c) {
+    var el = document.createElement("div");
+    el.className = "cell";
+    el.id = "cell-" + c.id;
+    el.dataset.id = c.id;
+    el.style.width = el.style.height = S.cs + "px";
+    el.style.left = c.x + "px";
+    el.style.top = c.y + "px";
+    if (c.stage === "gamete") el.classList.add("gamete");
+    if (c.stage === "divided") el.classList.add("divided");
+    if (c.fresh) el.classList.add("enter");
+
+    var box = document.createElement("div");
+    box.className = "chrs";
+    c.chromosomes.forEach(function (ch) { box.appendChild(buildChromosome(ch)); });
+    el.appendChild(box);
+
+    var tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = c.chromosomes.length + " 条";
+    el.appendChild(tag);
+
+    if (c.stage === "somatic" || c.stage === "m1") {
+      var b = document.createElement("button");
+      b.className = "poss";
+      b.textContent = "?";
+      b.onclick = function (ev) { ev.stopPropagation(); openPossibles(c); };
+      el.appendChild(b);
+    }
+    el.addEventListener("click", function (ev) { ev.stopPropagation(); onCellClick(c, el); });
+    return el;
+  }
+  function renderAll() {
+    while (canvas.lastChild && canvas.lastChild !== svg) canvas.removeChild(canvas.lastChild);
+    S.cells.forEach(function (c) { canvas.appendChild(buildCell(c)); });
+    sizeCanvas();
+    updateStats();
+  }
+  function replaceCellEl(cell) {
+    var old = document.getElementById("cell-" + cell.id);
+    if (old && old.parentNode) old.parentNode.replaceChild(buildCell(cell), old);
+  }
+  function updateStats() {
+    var hh = 0, hl = 0, ll = 0, dna = 0, counts = {};
+    S.cells.forEach(function (c) {
+      if (c.stage !== "divided") counts[c.chromosomes.length] = 1;
+      c.chromosomes.forEach(function (ch) {
+        ch.chromatids.forEach(function (t) {
+          dna++;
+          var h = t.strands.filter(function (s) { return s === "H"; }).length;
+          if (h === 2) hh++; else if (h === 1) hl++; else ll++;
+        });
+      });
+    });
+    $("#stCells").textContent = S.cells.length;
+    $("#stChr").textContent = Object.keys(counts).sort(function (a, b) { return a - b; }).join("/") || "-";
+    $("#stDna").textContent = dna;
+    $("#stHH").textContent = hh;
+    $("#stHL").textContent = hl;
+    $("#stLL").textContent = ll;
+    $("#barSub").textContent = (S.mode === 1 ? "¹⁵N 标记" : "¹⁵N 培养基") + " · 2n = " + S.n;
+  }
+
+  /* ---------- 菜单 ---------- */
+  var TYPE_MAP = { "有丝": "mitosis", "减一": "M1", "减二": "M2" };
+  function optionsFor(cell) {
+    if (cell.stage === "m1") return [{ t: "有丝", ok: false }, { t: "减一", ok: false }, { t: "减二", ok: true }];
+    if (cell.stage === "somatic") return [{ t: "有丝", ok: true }, { t: "减一", ok: true }, { t: "减二", ok: false }];
+    return [{ t: "有丝", ok: false }, { t: "减一", ok: false }, { t: "减二", ok: false }];
+  }
+  function onCellClick(cell, el) {
+    if (S.running) return;
+    if (cell.stage === "divided" || cell.stage === "gamete") return;
+    openMenu(cell, el);
+  }
+  function openMenu(cell, el) {
+    menuEl.innerHTML = "";
+    optionsFor(cell).forEach(function (o) {
+      var b = document.createElement("button");
+      b.className = "opt";
+      b.textContent = o.t;
+      b.disabled = !o.ok;
+      if (o.ok) b.onclick = function () { doDivision(cell, TYPE_MAP[o.t]); };
+      menuEl.appendChild(b);
+    });
+    S.cells.forEach(function (c) {
+      var e = document.getElementById("cell-" + c.id);
+      if (e) e.classList.toggle("sel", c === cell);
+    });
+    menuEl.classList.add("show");
+    positionMenu(el);
+  }
+  function positionMenu(el) {
+    var r = el.getBoundingClientRect();
+    var mw = menuEl.offsetWidth, mh = menuEl.offsetHeight;
+    var x = r.right + 10, y = r.top + (r.height - mh) / 2;
+    if (x + mw > window.innerWidth - 8) x = Math.max(8, r.left - mw - 10);
+    if (x < 8) x = 8;
+    if (y < 8) y = 8;
+    if (y + mh > window.innerHeight - 8) y = Math.max(8, window.innerHeight - mh - 8);
+    menuEl.style.left = x + "px";
+    menuEl.style.top = y + "px";
+  }
+  function closeMenu() {
+    menuEl.classList.remove("show");
+    S.cells.forEach(function (c) {
+      var e = document.getElementById("cell-" + c.id);
+      if (e) e.classList.remove("sel");
+    });
+  }
+
+  /* ---------- 分裂 ---------- */
+  async function doDivision(cell, type) {
+    if (S.running) return;
+    S.running = true;
+    closeMenu();
+    try {
+      var original = cell.chromosomes.map(copyChromosome);
+      var plan = planDivision(cell, type);
+      if (type !== "M2") {
+        cell.chromosomes = plan.chrs.map(copyChromosome);
+        replaceCellEl(cell);
+        await sleep(420);
+      }
+      var kids = daughtersFromPlan(plan).map(function (chrs) {
+        var k = newCell(cell.x, cell.y, chrs, stageAfter(type), cell.id);
+        k.fresh = true;
+        cell.children.push(k.id);
+        return k;
+      });
+      cell.stage = "divided";
+      cell.chromosomes = original;   // 分裂完回到未分裂的样子
+      S.cells = S.cells.concat(kids);
+
+      renderAll();
+      await sleep(30);
+      layoutTree();
+      applyPositions();
+      await sleep(480);
+      kids.forEach(function (k) {
+        var e = document.getElementById("cell-" + k.id);
+        if (e) e.classList.remove("enter");
+        k.fresh = false;
+      });
+      centerOn(kids);
+      updateStats();
+    } finally {
+      S.running = false;
+    }
+  }
+
+  /* ---------- 子细胞的所有可能 ---------- */
+  function signatureOf(daughters) {
+    return daughters.map(function (chrList) {
+      return chrList.map(function (ch) {
+        return ch.chromatids.map(compName).sort().join(",");
+      }).sort().join(";");
+    }).sort().join("||");
+  }
+  function countComp(chrList) {
+    var c = { HH: 0, HL: 0, LL: 0 };
+    chrList.forEach(function (ch) {
+      ch.chromatids.forEach(function (t) { c[compName(t)]++; });
+    });
+    return c;
+  }
+  function planFromBits(cell, type, bits) {
+    var chrs = type === "M2" ? cell.chromosomes.map(copyChromosome) : replicateChrs(cell.chromosomes);
+    if (type === "M1") {
+      var pairs = {};
+      chrs.forEach(function (ch) { (pairs[ch.pair] = pairs[ch.pair] || []).push(ch); });
+      var assign = {};
+      Object.keys(pairs).sort(function (a, b) { return Number(a) - Number(b); })
+        .forEach(function (p, i) { assign[p] = (bits >> i) & 1; });
+      return { type: type, chrs: chrs, kind: "pair", assign: assign };
+    }
+    var assign2 = [];
+    for (var i = 0; i < chrs.length; i++) assign2.push((bits >> i) & 1);
+    return { type: type, chrs: chrs, kind: "chromatid", assign: assign2 };
+  }
+  function buildChrSmall(ch) {
+    var el = document.createElement("div");
+    el.className = "chr sm";
+    el.style.height = Math.max(11, 22 - (ch.pair - 1) * 3) + "px";
+    ch.chromatids.forEach(function (t) {
+      var ctd = document.createElement("div");
+      ctd.className = "ctd";
+      t.strands.forEach(function (st) {
+        var s = document.createElement("i");
+        s.className = "st sm";
+        s.style.width = "2px";
+        if (st === "H") {
+          var mk = document.createElement("div");
+          mk.className = "mk";
+          s.appendChild(mk);
+        }
+        ctd.appendChild(s);
+      });
+      el.appendChild(ctd);
+    });
+    return el;
+  }
+  function miniCell(chrs) {
+    var cell = document.createElement("div");
+    cell.className = "mcell";
+    var box = document.createElement("div");
+    box.className = "mchrs";
+    chrs.forEach(function (ch) { box.appendChild(buildChrSmall(ch)); });
+    cell.appendChild(box);
+    return cell;
+  }
+  function openPossibles(cell) {
+    var body = $("#poBody");
+    body.innerHTML = "";
+    $("#poTitle").textContent = cell.chromosomes.length + " 条染色体 · 子细胞的所有可能";
+
+    var types = [];
+    if (cell.stage === "somatic") types = [["mitosis", "有丝分裂"], ["M1", "减数第一次分裂"]];
+    else if (cell.stage === "m1") types = [["M2", "减数第二次分裂"]];
+    if (!types.length) {
+      body.innerHTML = '<div class="none">这个细胞不能再分裂了</div>';
+      $("#po").classList.add("show");
+      return;
+    }
+
+    types.forEach(function (tp) {
+      var type = tp[0], label = tp[1];
+      var trials = type === "M1"
+        ? Math.pow(2, Math.floor(cell.chromosomes.length / 2))
+        : Math.pow(2, cell.chromosomes.length);
+
+      var head = document.createElement("div");
+      head.className = "grp";
+      body.appendChild(head);
+
+      if (trials > 4096) {
+        head.textContent = label;
+        var d = document.createElement("div");
+        d.className = "none";
+        d.textContent = "组合太多（" + trials + " 种），无法枚举";
+        body.appendChild(d);
+        return;
+      }
+
+      var seen = {};
+      for (var i = 0; i < trials; i++) {
+        var plan = planFromBits(cell, type, i);
+        var daughters = daughtersFromPlan(plan);
+        var sig = signatureOf(daughters);
+        if (!seen[sig]) seen[sig] = { daughters: daughters, ways: 0 };
+        seen[sig].ways++;
+      }
+
+      var keys = Object.keys(seen).sort(function (a, b) {
+        var ca = countComp(seen[a].daughters[0]), cb = countComp(seen[b].daughters[0]);
+        return (cb.HH * 100 + cb.HL * 10) - (ca.HH * 100 + ca.HL * 10);
+      });
+
+      head.textContent = label + " · " + keys.length + " 种结果";
+
+      var wrapEl = document.createElement("div");
+      wrapEl.className = "pcards";
+      keys.forEach(function (k) {
+        var item = seen[k];
+        var card = document.createElement("div");
+        card.className = "pcard";
+        var row = document.createElement("div");
+        row.className = "pcells";
+        row.appendChild(miniCell(item.daughters[0]));
+        row.appendChild(miniCell(item.daughters[1]));
+        card.appendChild(row);
+        var cap = document.createElement("div");
+        cap.className = "pway";
+        cap.textContent = item.ways > 1 ? "共 " + item.ways + " 种分法" : "唯一结果";
+        card.appendChild(cap);
+        wrapEl.appendChild(card);
+      });
+      body.appendChild(wrapEl);
+    });
+
+    $("#po").classList.add("show");
+  }
+
+  /* ---------- 视图 ---------- */
+  function centerOn(list) {
+    if (!list || !list.length) return;
+    var sx = 0, sy = 0;
+    list.forEach(function (c) { sx += c.x + S.cs / 2; sy += c.y + S.cs / 2; });
+    sx = sx / list.length * S.zoom;
+    sy = sy / list.length * S.zoom;
+    wrap.scrollLeft = Math.max(0, sx - wrap.clientWidth / 2);
+    wrap.scrollTop = Math.max(0, sy - wrap.clientHeight / 2);
+  }
+  function centerSingle() {
+    if (S.cells.length !== 1) return;
+    var c = S.cells[0];
+    var vw = wrap.clientWidth / S.zoom, vh = wrap.clientHeight / S.zoom;
+    c.x = Math.max(PAD, (vw - S.cs) / 2);
+    c.y = Math.max(PAD, (vh - S.cs) / 2);
+    applyPositions();
+  }
+  function setZoom(z) { S.zoom = Math.max(0.35, Math.min(1.4, z)); sizeCanvas(); }
+  function fitToScreen() {
+    sizeCanvas();
+    var cw = canvas.offsetWidth || 1, chh = canvas.offsetHeight || 1;
+    setZoom(Math.min((wrap.clientWidth - 16) / cw, (wrap.clientHeight - 16) / chh, 1.25));
+    wrap.scrollLeft = 0; wrap.scrollTop = 0;
+  }
+
+  /* ---------- 启动 ---------- */
+  function readN() {
+    var v = parseInt($("#nInput").value, 10);
+    var hint = $("#nHint");
+    if (!isFinite(v) || v < 2) v = 2;
+    if (v > 40) v = 40;
+    if (v % 2 !== 0) {
+      v = v + 1;
+      hint.textContent = "只能偶数，已改成 " + v;
+      hint.classList.add("err");
+    } else {
+      hint.textContent = "必须是偶数，范围 2 ～ 40";
+      hint.classList.remove("err");
+    }
+    $("#nInput").value = v;
+    return v;
+  }
+  function startRun() {
+    applyMode();
+    applyMetrics();
+    S.seq = 0; S.cells = []; S.zoom = 1; S.running = false;
+    closeMenu();
+    var root = newCell(PAD, PAD, initialChromosomes(), "somatic", null);
+    S.cells.push(root);
+    layoutTree();
+    renderAll();
+    fitToScreen();
+    centerSingle();
+  }
+
+  /* ---------- 事件 ---------- */
+  $("#btnStart").onclick = function () {
+    S.n = readN();
+    $("#cover").classList.add("hide");
+    startRun();
+  };
+  $("#nInput").addEventListener("change", readN);
+  $("#modes").onclick = function (e) {
+    var m = e.target.closest ? e.target.closest(".mode") : null;
+    if (!m) return;
+    Array.prototype.forEach.call(this.children, function (c) { c.classList.remove("on"); });
+    m.classList.add("on");
+    S.mode = Number(m.dataset.mode);
+  };
+  $("#btnReset").onclick = function () { startRun(); };
+  $("#btnSetup").onclick = function () { closeMenu(); $("#cover").classList.remove("hide"); };
+  $("#btnIn").onclick = function () { setZoom(S.zoom + 0.15); };
+  $("#btnOut").onclick = function () { setZoom(S.zoom - 0.15); };
+  $("#btnFit").onclick = fitToScreen;
+  $("#btnAllow").onclick = function () { document.body.classList.add("allow-portrait"); };
+  $("#btnHelp").onclick = function () {
+    alert(
+      "竖线 = 一条 DNA 链；带横杠的那条链 = ¹⁵N 标记。\n" +
+      "一条染色单体（一个 DNA）= 2 条链；复制后一条染色体变 2 条染色单体 = 4 条链。\n\n" +
+      "点细胞选 有丝 / 减一 / 减二，立刻分裂。\n" +
+      "细胞右边的小「?」看这次分裂能得到哪些子细胞组合。"
+    );
+  };
+  $("#poClose").onclick = function () { $("#po").classList.remove("show"); };
+  $("#po").onclick = function (e) { if (e.target === this) this.classList.remove("show"); };
+  wrap.addEventListener("click", function () { closeMenu(); });
+  window.addEventListener("resize", function () { if (S.cells.length) sizeCanvas(); });
+
+  $("#nInput").value = 4;
+  applyMode();
+  applyMetrics();
+})();
+</script>
 </body>
 </html>
